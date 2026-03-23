@@ -1,13 +1,19 @@
 import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { Alert } from "react-native";
+import { Stack, useRouter } from "expo-router";
 import { useFonts, Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
+import { initNfc, readNfcTag } from "../lib/nfc";
+import { getLatestReceipt, claimReceipt } from "../lib/api";
+import { getDeviceId } from "../lib/device";
 import { colors } from "../lib/theme";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const router = useRouter();
+
   const [fontsLoaded] = useFonts({
     Manrope_700Bold,
     Manrope_800ExtraBold,
@@ -19,6 +25,40 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    let scanning = true;
+
+    async function startNfcLoop() {
+      const supported = await initNfc();
+      if (!supported) return;
+
+      while (scanning) {
+        const url = await readNfcTag();
+        if (!url || !scanning) continue;
+
+        try {
+          const receipt = await getLatestReceipt();
+          if (!receipt) {
+            Alert.alert("No receipt", "No new receipt available.");
+            continue;
+          }
+
+          const deviceId = await getDeviceId();
+          await claimReceipt(receipt.id, deviceId);
+          router.push(`/receipt/${receipt.id}`);
+        } catch {
+          Alert.alert("Error", "Failed to claim receipt.");
+        }
+      }
+    }
+
+    startNfcLoop();
+
+    return () => {
+      scanning = false;
+    };
+  }, [router]);
 
   if (!fontsLoaded) return null;
 
