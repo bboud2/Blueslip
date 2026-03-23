@@ -1,0 +1,8 @@
+{
+  "name": "blueslip",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ]
+}
