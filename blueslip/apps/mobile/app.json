@@ -28,9 +28,9 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-router",
       "expo-secure-store",
-      "expo-font",
-      "expo-router"
+      ["expo-build-properties", {"android": {"minSdkVersion": 21}}]
     ]
   }
 }
